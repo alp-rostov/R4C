@@ -1,8 +1,6 @@
-from datetime import datetime
 from django.http import JsonResponse
 from django.views.generic import CreateView, TemplateView
 from robots.forms import RobotForm
-
 
 class CreateRobot(TemplateView):
     template_name = 'robot/createrobot.html'
