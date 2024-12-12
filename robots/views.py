@@ -1,5 +1,7 @@
+from datetime import datetime, timedelta, date
+
 from django.db.models import Count
-from django.http import JsonResponse
+from django.http import JsonResponse, FileResponse
 from django.views.generic import CreateView, TemplateView, ListView
 from robots.forms import RobotForm
 from robots.models import Robot
@@ -45,3 +47,36 @@ class ListRobotsReport(ListView):
                 df = pd.DataFrame(i)
                 df.to_excel(excel_writer, sheet_name=i['МОДЕЛЬ'][0], index=False)
         return queryset
+
+
+def CreateReportExcel(request, **kwargs):
+    now = date.today()
+    current_weekday = now.weekday()
+    current_week = date.today() - timedelta(days=current_weekday)
+
+    queryset = Robot.objects.values('model', 'version').annotate(
+        quantity=Count("model")).filter(created__gte=current_week)
+    c = queryset.values('model').distinct()
+    data_list = []
+    for i in c:
+        d = queryset.filter(model=i['model'])
+        models = []
+        versions = []
+        quantity = []
+        for a in d:
+            models.append(a['model'])
+            versions.append(a['version'])
+            quantity.append(a['quantity'])
+        data = {'МОДЕЛЬ': models,
+                'ВЕРСИЯ': versions,
+                'КОЛИЧЕСТВО ЗА НЕДЕЛЮ': quantity}
+        data_list.append(data)
+
+    with pd.ExcelWriter('analitics.xlsx', engine="xlsxwriter",
+                        mode='w') as excel_writer:
+        for i in data_list:
+            df = pd.DataFrame(i)
+            df.to_excel(excel_writer, sheet_name=i['МОДЕЛЬ'][0], index=False)
+
+    return FileResponse(open('analitics.xlsx', 'rb'), as_attachment=False, filename= 'analitics.xlsx' )
+
