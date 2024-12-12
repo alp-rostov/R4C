@@ -12,4 +12,4 @@ class CreateRobot(TemplateView):
             form.save()
             return JsonResponse({'message': 'Робот добавлен'})
         else:
-            return JsonResponse({'message': 'Ошибка валидации'})
+            return JsonResponse({'message': 'Ошибка валидации', 'errors': form.errors})
