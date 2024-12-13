@@ -1,6 +1,9 @@
-from django.http import JsonResponse
+from django.db.models import Count
+from django.http import JsonResponse, HttpResponse, FileResponse
 from django.views.generic import CreateView, TemplateView
 from robots.forms import RobotForm
+from robots.models import Robot
+from robots.utils import current_monday, createreportfile
 
 
 class CreateRobot(TemplateView):
@@ -18,3 +21,14 @@ class CreateRobot(TemplateView):
             return JsonResponse({'message': 'Робот добавлен'})
         else:
             return JsonResponse({'message': 'Ошибка валидации', 'errors':form.errors})
+
+
+def create_report_excel(request, **kwargs):
+    queryset = (Robot.objects
+                .values('model', 'version')
+                .annotate(quantity=Count("model"))
+                .filter(created__gte=current_monday()))
+    if not queryset:
+        return HttpResponse("No robots. The report is empty.")
+    createreportfile(queryset, 'analitics.xlsx')
+    return FileResponse(open('analitics.xlsx', 'rb'), as_attachment=False, filename= 'analitics.xlsx' )
