@@ -1,6 +1,9 @@
 import pandas as pd
+from django.core.mail import EmailMultiAlternatives
 from django.db.models import QuerySet
 from datetime import timedelta, date
+
+from django.template.loader import render_to_string
 
 
 def createreportfile(queryset:QuerySet, filename:str) -> None:
@@ -26,6 +29,21 @@ def createreportfile(queryset:QuerySet, filename:str) -> None:
         for i in data_list:
             df = pd.DataFrame(i)
             df.to_excel(excel_writer, sheet_name=i['МОДЕЛЬ'][0], index=False)
+
+def send_email(email:str='', subject_:str=f'Уведомление о наличии робота', template_name_:str = 'robot/email.html', context_:dict={}):
+    """send email"""
+    html_content = render_to_string(
+        template_name=template_name_,
+        context=context_
+    )
+    msg = EmailMultiAlternatives(
+        subject=subject_,
+        from_email='admin@sakhlis-remonti.ge',
+        to=[email],
+        )
+    msg.attach_alternative(html_content, "text/html")
+    msg.send()
+
 
 def current_monday() -> date:
     """ Monday date of this week """
